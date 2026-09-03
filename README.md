@@ -21,52 +21,55 @@ A full-stack clothing e-commerce website built with Flask.
 - **Database**: SQLite (Development), PostgreSQL (Production)
 - **Frontend**: HTML5, Jinja2 Templates, Tailwind CSS / Bootstrap 5, JavaScript (ES6+), Alpine.js / Vanilla JS
 - **Payment Processing**: Stripe API (Stripe Checkout & Webhooks)
-- **Deployment & Production**: Gunicorn WSGI Server, Render / Fly.io, Docker (optional)
+- **Deployment & Production**: PythonAnywhere (uWSGI, free HTTPS), Gunicorn for self-hosting, Docker (optional)
 
 ## Project Structure
 
 ```
-ecommerce/
+shop/                          # repo root
 ├── app/
 │   ├── __init__.py           # App factory (create_app)
 │   ├── config.py             # Configuration classes (Dev, Prod, Test)
-│   ├── extensions.py         # Extension instances (db, migrate, login_manager)
+│   ├── extensions.py         # Extension instances (db, login_manager, csrf, mail, migrate)
 │   ├── models/               # SQLAlchemy Models
 │   │   ├── __init__.py
-│   │   ├── user.py           # User model & address handling
+│   │   ├── user.py           # User & Wishlist models
 │   │   ├── product.py        # Category, Product, Review models
 │   │   ├── cart.py           # Cart & CartItem models
 │   │   └── order.py          # Order & OrderItem models
 │   ├── routes/               # Route Blueprints
-│   │   ├── __init__.py
-│   │   ├── main.py           # Home, landing pages
-│   │   ├── auth.py           # Auth routes (login, register, logout)
-│   │   ├── products.py       # Catalog, search, product detail
-│   │   ├── cart.py           # Cart operations
-│   │   ├── orders.py         # Order history & status
-│   │   ├── admin.py          # Admin portal routes
-│   │   └── api.py            # REST API endpoints & Stripe webhooks
-│   ├── static/               # Static assets
-│   │   ├── css/              # Stylesheets
-│   │   ├── js/               # Client-side JavaScript
-│   │   └── images/           # Image storage
-│   │       └── products/     # Product images (.gitkeep)
-│   └── templates/            # Jinja2 Templates
-│       ├── base.html
-│       ├── index.html
-│       ├── auth/
-│       ├── products/
-│       ├── cart/
-│       ├── orders/
-│       └── admin/
-├── migrations/               # Alembic database migration scripts
+│   │   ├── __init__.py       # register_blueprints(app)
+│   │   ├── auth.py           # Auth pages + /api/auth endpoints
+│   │   ├── catalog.py        # Home, shop, product detail + /api/products, /api/reviews
+│   │   ├── cart.py           # Cart page + /api/cart, /api/wishlist
+│   │   ├── orders.py         # Checkout + /api/checkout, /api/orders, Stripe webhook
+│   │   └── admin.py          # Admin dashboard + /api/admin endpoints
+│   ├── forms/                # Flask-WTF Forms
+│   │   ├── login.py          # LoginForm
+│   │   ├── register.py       # RegistrationForm
+│   │   └── checkout.py       # CheckoutForm
+│   ├── utils/
+│   │   └── helpers.py        # Cart helpers, serializers
+│   ├── static/               # Static assets (mapped in PythonAnywhere Web tab)
+│   │   ├── css/style.css
+│   │   ├── js/               # main.js, cart.js, product.js
+│   │   └── images/products/  # Product images (.gitkeep)
+│   └── templates/            # Jinja2 Templates (all extend base.html)
+│       ├── base.html         # Layout: navbar, footer, toasts, CSRF meta
+│       ├── index.html        # Home / hero / featured
+│       ├── shop.html         # Listing + filters + pagination
+│       ├── product_detail.html
+│       ├── cart.html
+│       ├── checkout.html
+│       ├── login.html / register.html / account.html
+│       └── admin_dashboard.html
 ├── .env.example              # Template environment variables
 ├── .gitignore                # Git ignore configuration
 ├── requirements.txt          # Python dependencies
-├── run.py                    # Application entry point
+├── run.py                    # Local development entry point
 ├── seed.py                   # Standalone database seed script
 └── README.md                 # Setup and documentation
-```
+``````
 
 ## Prerequisites
 
@@ -79,8 +82,8 @@ ecommerce/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/atelier-ecommerce.git
-   cd atelier-ecommerce/ecommerce
+   git clone https://github.com/workforcenexusportal-cmyk/shop.git
+   cd shop
    ```
 
 2. Create and activate virtual environment:
@@ -236,51 +239,135 @@ Initial admin credentials created by `python seed.py`:
 - **Email**: `admin@atelier.com`
 - **Password**: `adminpass123`
 
-## Deployment
+## Deployment on PythonAnywhere
 
-### Deploying on Render
+PythonAnywhere is the recommended host for this project — it supports Flask out of the box,
+handles HTTPS automatically, and has a free tier that works for development/staging.
 
-1. Create a new **Web Service** on Render and connect your GitHub repository.
-2. Select **Python 3** environment.
-3. Build Command:
-   ```bash
-   pip install -r requirements.txt && flask db upgrade
-   ```
-4. Start Command:
-   ```bash
-   gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
-   ```
-5. Add Environment Variables under Render dashboard settings:
-   - `FLASK_ENV=production`
-   - `SECRET_KEY=your-strong-production-secret-key`
-   - `DATABASE_URL=postgresql://user:password@host:5432/dbname` (Render PostgreSQL internal connection string)
-   - `STRIPE_PUBLISHABLE_KEY=pk_live_...`
-   - `STRIPE_SECRET_KEY=sk_live_...`
-   - `STRIPE_WEBHOOK_SECRET=whsec_...`
+### 1. Pull the code into your account
 
-### Deploying on Fly.io
+Open a **Bash console** on PythonAnywhere and clone the repo:
 
-1. Install Fly CLI and log in:
-   ```bash
-   flyctl auth login
+```bash
+git clone https://github.com/workforcenexusportal-cmyk/shop.git ~/shop
+cd ~/shop
+```
+
+(If you already cloned it before, just `cd ~/shop && git pull` to get updates.)
+
+### 2. Create a virtualenv and install dependencies
+
+Still in the Bash console:
+
+```bash
+mkvirtualenv atelier --python=python3.10
+pip install -r ~/shop/requirements.txt
+```
+
+> Note: `gunicorn` is in requirements.txt but is not needed on PythonAnywhere —
+> the platform serves WSGI apps with uWSGI itself. It does no harm to keep it installed.
+
+### 3. Set up environment variables
+
+PythonAnywhere consoles don't load `.env` automatically for the web app, so set
+the variables inside the WSGI file (step 5) instead, or keep a `.env` in `~/shop`
+for console work:
+
+```bash
+cp ~/shop/.env.example ~/shop/.env
+nano ~/shop/.env   # fill in SECRET_KEY, Stripe keys, mail settings
+```
+
+### 4. Initialize the database
+
+```bash
+cd ~/shop
+flask db init          # only if the migrations/ folder doesn't exist yet
+flask db migrate -m "Initial migration"
+flask db upgrade
+python seed.py         # loads categories, 28 products, users, reviews
+```
+
+SQLite is fine on PythonAnywhere — the database will live at `~/shop/instance/shop.db`.
+(The `instance/` folder is already in `.gitignore`.)
+
+### 5. Configure the Web app
+
+In the PythonAnywhere **Web** tab:
+
+1. **Add a new web app** → choose your domain (e.g. `yourusername.pythonanywhere.com`)
+   → **Manual configuration** → pick **Python 3.10** (do NOT choose the "Flask" wizard —
+   we want manual control).
+
+2. **Code section → WSGI file**: click the WSGI file link and replace its contents with:
+
+   ```python
+   import os
+   import sys
+
+   # Add the project root to the path
+   path = '/home/YOURUSERNAME/shop'
+   if path not in sys.path:
+       sys.path.insert(0, path)
+
+   # Environment variables (or set these in the PythonAnywhere "Environment variables" section)
+   os.environ['FLASK_CONFIG'] = 'production'
+   os.environ['SECRET_KEY'] = 'your-strong-production-secret-key'
+   # os.environ['STRIPE_SECRET_KEY'] = 'sk_live_...'
+   # os.environ['STRIPE_PUBLISHABLE_KEY'] = 'pk_live_...'
+   # os.environ['MAIL_SERVER'] = 'smtp.gmail.com'
+   # ... remaining keys from .env.example
+
+   from app import create_app
+   application = create_app()
    ```
-2. Launch application:
-   ```bash
-   fly launch --name atelier-ecommerce
-   ```
-3. Attach a PostgreSQL database:
-   ```bash
-   fly postgres create
-   fly postgres attach --app atelier-ecommerce
-   ```
-4. Set secrets:
-   ```bash
-   fly secrets set SECRET_KEY="your-production-secret-key" STRIPE_SECRET_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..."
-   ```
-5. Deploy:
-   ```bash
-   fly deploy
-   ```
+
+   Replace `YOURUSERNAME` with your PythonAnywhere username, then save.
+
+3. **Virtualenv section**: set the path to your virtualenv, e.g.
+   `/home/YOURUSERNAME/.virtualenvs/atelier`
+
+4. **Static files section**: add this mapping so `/static/` is served directly by
+   PythonAnywhere's web servers (much faster than going through Flask):
+
+   | URL | Directory |
+   |---|---|
+   | `/static/` | `/home/YOURUSERNAME/shop/app/static/` |
+
+5. **Reload**: click the green **Reload** button, then visit
+   `https://yourusername.pythonanywhere.com`.
+
+### 6. Updating after code changes
+
+Whenever you push new commits to GitHub:
+
+```bash
+cd ~/shop
+git pull
+flask db upgrade        # if there are new migrations
+```
+
+Then hit **Reload** in the Web tab.
+
+### 7. Stripe webhooks in production
+
+Point your Stripe webhook endpoint at your live PythonAnywhere URL:
+
+```
+https://yourusername.pythonanywhere.com/api/stripe/webhook
+```
+
+Add the webhook signing secret (`whsec_...`) to your environment variables, then reload.
+HTTPS is provisioned automatically by PythonAnywhere — no certificate setup needed.
+
+### Troubleshooting tips
+
+- **Error log**: Web tab → **Error log** link (e.g. `/var/log/yourusername.pythonanywhere.com.error.log`)
+  — this is the first place to look if the app shows a 500.
+- **ModuleNotFoundError**: your virtualenv isn't selected in the Web tab, or the WSGI
+  file's `path` doesn't point at `~/shop`.
+- **Static files 404**: check the static files mapping table — URL must be `/static/`
+  and the directory must end with `/app/static/`.
 
 ## Stripe Configuration
 
