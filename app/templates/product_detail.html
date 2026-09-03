@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - ATELIER{% endblock %}
+
+{% block meta_description %}{{ product.description|truncate(150) }}{% endblock %}
+
+{% block content %}
+<div class="container mt-2 mb-4">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb mb-4">
+        <a href="{{ url_for('catalog.index') }}">Home</a> / 
+        <a href="{{ url_for('catalog.shop') }}">Shop</a> / 
+        {% if product.category %}
+            {% if product.category.slug is defined %}
+                <a href="{{ url_for('catalog.shop', category=product.category.slug) }}">{{ product.category.name }}</a> /
+            {% else %}
+                <span>{{ product.category }}</span> /
+            {% endif %}
+        {% endif %}
+        <span>{{ product.name }}</span>
+    </nav>
+
+    <!-- Product Details Main Layout -->
+    <div class="grid grid-cols-2 gap mb-4">
+        <!-- Gallery Column -->
+        <div>
+            <div class="main-image mb-2" style="border: 1px solid #eee; overflow: hidden; border-radius: 4px;">
+                <img id="mainProductImage" src="{{ product.images[0] if product.images and product.images|length > 0 else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ product.name }}" class="product-img" style="width: 100%; height: auto; display: block; object-fit: cover;">
+            </div>
+            
+            {% if product.images and product.images|length > 1 %}
+            <div class="flex gap thumbnails" style="overflow-x: auto;">
+                {% for img in product.images %}
+                <img src="{{ img }}" alt="{{ product.name }} thumbnail {{ loop.index }}" class="thumbnail-img" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #ddd; cursor: pointer; border-radius: 4px;" onclick="document.getElementById('mainProductImage').src='{{ img }}'">
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Details Column -->
+        <div>
+            <h1 class="product-name" style="font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 0.5rem;">{{ product.name }}</h1>
+            
+            <!-- Rating -->
+            <div class="flex gap mb-2" style="align-items: center;">
+                <div class="stars" style="color: #f59e0b;">
+                    {% set rating = product.average_rating|default(5.0) %}
+                    {% for i in range(1, 6) %}
+                        {% if i <= rating %}★{% else %}☆{% endif %}
+                    {% endfor %}
+                </div>
+                <span style="color: #666; font-size: 0.9rem;">({{ rating }} / 5.0)</span>
+            </div>
+
+            <div class="product-price mb-2" style="font-size: 1.5rem; font-weight: 600;">${{ '%.2f'|format(product.price) }}</div>
+
+            <!-- Stock Status -->
+            <div class="stock-status mb-4">
+                {% if product.in_stock is defined and not product.in_stock or (product.stock is defined and product.stock <= 0) %}
+                    <span class="badge badge-stock out-of-stock">Out of Stock</span>
+                {% else %}
+                    <span class="badge badge-stock" style="background: #e6f4ea; color: #137333;">In Stock ({% if product.stock is defined %}{{ product.stock }} available{% else %}Available{% endif %})</span>
+                {% endif %}
+            </div>
+
+            <p class="mb-4" style="color: #444; line-height: 1.6;">{{ product.description }}</p>
+
+            <!-- Product Form / Variant Selectors -->
+            <form id="addToCartForm" data-product-id="{{ product.id }}">
+                <div class="variant-selector mb-4">
+                    <!-- Size Selector -->
+                    {% if product.sizes %}
+                    <div class="size-selector mb-4">
+                        <label class="form-label" style="display: block; font-weight: 600;" id="sizeLabel">Select Size:</label>
+                        <div class="flex gap" style="flex-wrap: wrap;">
+                            {% for sz in product.sizes %}
+                            <button type="button" class="btn btn-outline btn-sm size-btn" data-variant-size="{{ sz }}">{{ sz }}</button>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="size" id="selectedSize" value="{{ product.sizes[0] if product.sizes else '' }}">
+                    </div>
+                    {% endif %}
+
+                    <!-- Color Selector -->
+                    {% if product.colors %}
+                    <div class="color-selector mb-4">
+                        <label class="form-label" style="display: block; font-weight: 600;" id="colorLabel">Select Color:</label>
+                        <div class="flex gap" style="flex-wrap: wrap;">
+                            {% for col in product.colors %}
+                            <button type="button" class="btn btn-outline btn-sm color-btn" data-variant-color="{{ col }}">{{ col }}</button>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="color" id="selectedColor" value="{{ product.colors[0] if product.colors else '' }}">
+                    </div>
+                    {% endif %}
+
+                    <!-- Quantity Selector -->
+                    <div class="qty-selector mb-4 flex gap" style="align-items: center;">
+                        <label class="form-label" style="margin-bottom: 0; font-weight: 600;">Quantity:</label>
+                        <div class="flex gap" style="align-items: center; border: 1px solid #ccc; border-radius: 4px; overflow: hidden;">
+                            <button type="button" class="btn btn-sm" id="qtyMinus" style="border: none; background: #f0f0f0; padding: 0.5rem 0.8rem;">-</button>
+                            <input type="number" id="productQuantity" name="quantity" value="1" min="1" max="{{ product.stock if product.stock else 99 }}" class="form-input" style="width: 50px; text-align: center; border: none; padding: 0.5rem 0;">
+                            <button type="button" class="btn btn-sm" id="qtyPlus" style="border: none; background: #f0f0f0; padding: 0.5rem 0.8rem;">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions flex gap mb-4">
+                    <button type="button" class="btn btn-primary add-to-cart-btn" data-product-id="{{ product.id }}" {% if product.in_stock is defined and not product.in_stock %}disabled{% endif %} style="flex: 2; padding: 0.8rem 1.5rem;">
+                        Add to Cart
+                    </button>
+                    <button type="button" class="btn btn-outline wishlist-btn" data-product-id="{{ product.id }}" style="flex: 1; padding: 0.8rem;">
+                        ♥ Wishlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Details, Reviews Tabs/Sections -->
+    <div class="mt-4 mb-4" style="border-top: 1px solid #eee; padding-top: 2rem;">
+        <h2 class="section-title mb-4">Customer Reviews</h2>
+
+        <!-- Review List -->
+        <div class="review-list mb-4">
+            {% if product.reviews %}
+                {% for rev in product.reviews %}
+                <div class="review-card mb-2" style="background: #fafafa; padding: 1rem; border-radius: 4px; border: 1px solid #eee;">
+                    <div class="flex gap mb-1" style="justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">{{ rev.user_name if rev.user_name else 'Verified Buyer' }}</span>
+                        <span style="color: #888; font-size: 0.85rem;">{{ rev.date if rev.date else 'Recent' }}</span>
+                    </div>
+                    <div class="stars mb-1" style="color: #f59e0b;">
+                        {% for i in range(1, 6) %}
+                            {% if i <= rev.rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </div>
+                    <p style="color: #444; margin-bottom: 0;">{{ rev.comment }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="mb-4" style="color: #666;">No reviews yet for this product. Be the first to write a review!</p>
+            {% endif %}
+        </div>
+
+        <!-- Write a Review Form -->
+        {% if current_user and current_user.is_authenticated %}
+        <div style="background: #f9f9f9; padding: 1.5rem; border-radius: 4px;" class="mt-4">
+            <h3 class="mb-2">Write a Review</h3>
+            <form action="{{ url_for('catalog.product_detail', product_id=product.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                <div class="form-group mb-2">
+                    <label class="form-label">Rating</label>
+                    <select name="rating" class="form-select" style="max-width: 200px;" required>
+                        <option value="5">5 Stars - Excellent</option>
+                        <option value="4">4 Stars - Very Good</option>
+                        <option value="3">3 Stars - Average</option>
+                        <option value="2">2 Stars - Poor</option>
+                        <option value="1">1 Star - Terrible</option>
+                    </select>
+                </div>
+                <div class="form-group mb-2">
+                    <label class="form-label">Your Review</label>
+                    <textarea name="comment" rows="4" class="form-textarea" placeholder="Share details about the quality, fit, and style..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Submit Review</button>
+            </form>
+        </div>
+        {% else %}
+        <p><a href="{{ url_for('auth.login') }}">Log in</a> to write a review for this product.</p>
+        {% endif %}
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="related-products mt-4">
+        <div class="section-header mb-4">
+            <h2 class="section-title">You May Also Like</h2>
+        </div>
+        <div class="product-grid grid grid-cols-4 gap">
+            {% for rp in related_products[:4] %}
+            <div class="product-card" data-product-id="{{ rp.id }}">
+                <a href="{{ url_for('catalog.product_detail', product_id=rp.id) }}">
+                    <img src="{{ rp.images[0] if rp.images and rp.images|length > 0 else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ rp.name }}" class="product-img">
+                </a>
+                <div class="product-meta mt-2">
+                    <h3 class="product-name">
+                        <a href="{{ url_for('catalog.product_detail', product_id=rp.id) }}">{{ rp.name }}</a>
+                    </h3>
+                    <div class="product-price">${{ '%.2f'|format(rp.price) }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/product.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Shop - ATELIER{% endblock %}
+
+{% block meta_description %}Browse our full catalogue of luxury apparel. Filter by category, price, size, and color to find your ideal fit.{% endblock %}
+
+{% block content %}
+<div class="container mt-2 mb-4">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb mb-4">
+        <a href="{{ url_for('catalog.index') }}">Home</a> / <span>Shop</span>
+    </nav>
+
+    <div class="grid gap" style="grid-template-columns: 260px 1fr;">
+        <!-- Filter Sidebar -->
+        <aside class="filter-sidebar">
+            <h3 class="mb-2" style="font-family: 'Playfair Display', serif; font-size: 1.25rem;">Filters</h3>
+            
+            <form id="filterForm" action="{{ url_for('catalog.shop') }}" method="GET" data-search-endpoint="{{ url_for('catalog.shop') }}">
+                <!-- Search Keyword -->
+                <div class="filter-group mb-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-input" placeholder="Search products..." value="{{ request.args.get('q', '') }}" data-debounce="500">
+                </div>
+
+                <!-- Category Filter -->
+                <div class="filter-group mb-4">
+                    <h4 class="form-label">Category</h4>
+                    <div class="filter-option mb-1">
+                        <label class="flex gap" style="align-items: center; cursor: pointer;">
+                            <input type="radio" name="category" value="" {% if not selected_category and not request.args.get('category') %}checked{% endif %}>
+                            <span>All Categories</span>
+                        </label>
+                    </div>
+                    {% if categories %}
+                        {% for cat in categories %}
+                        <div class="filter-option mb-1">
+                            <label class="flex gap" style="align-items: center; cursor: pointer;">
+                                <input type="radio" name="category" value="{{ cat.slug }}" {% if selected_category == cat.slug or request.args.get('category') == cat.slug %}checked{% endif %}>
+                                <span>{{ cat.name }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Price Range Filter -->
+                <div class="filter-group mb-4">
+                    <h4 class="form-label">Price Range</h4>
+                    <div class="flex gap" style="align-items: center;">
+                        <input type="number" name="min_price" placeholder="Min" class="form-input" value="{{ request.args.get('min_price', '') }}" style="width: 50%;">
+                        <span>-</span>
+                        <input type="number" name="max_price" placeholder="Max" class="form-input" value="{{ request.args.get('max_price', '') }}" style="width: 50%;">
+                    </div>
+                </div>
+
+                <!-- Size Selector Filter -->
+                <div class="filter-group mb-4">
+                    <h4 class="form-label">Size</h4>
+                    <div class="size-selector flex gap" style="flex-wrap: wrap;">
+                        {% for sz in ['XS', 'S', 'M', 'L', 'XL', 'XXL'] %}
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" name="size" value="{{ sz }}" {% if sz in request.args.getlist('size') %}checked{% endif %} class="hidden">
+                            <span class="btn btn-outline btn-sm {% if sz in request.args.getlist('size') %}active{% endif %}">{{ sz }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Color Selector Filter -->
+                <div class="filter-group mb-4">
+                    <h4 class="form-label">Color</h4>
+                    <div class="color-selector flex gap" style="flex-wrap: wrap;">
+                        {% for col in ['Black', 'White', 'Beige', 'Navy', 'Grey', 'Brown'] %}
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" name="color" value="{{ col }}" {% if col in request.args.getlist('color') %}checked{% endif %}>
+                            <span>{{ col }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Sort By Dropdown -->
+                <div class="filter-group mb-4">
+                    <label class="form-label">Sort By</label>
+                    <select name="sort" class="form-select">
+                        <option value="featured" {% if request.args.get('sort') == 'featured' %}selected{% endif %}>Featured</option>
+                        <option value="price_low" {% if request.args.get('sort') == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if request.args.get('sort') == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="newest" {% if request.args.get('sort') == 'newest' %}selected{% endif %}>Newest Arrivals</option>
+                    </select>
+                </div>
+
+                <div class="flex gap mt-2">
+                    <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;">Apply</button>
+                    <a href="{{ url_for('catalog.shop') }}" class="btn btn-outline btn-sm" style="text-align: center;">Clear</a>
+                </div>
+            </form>
+        </aside>
+
+        <!-- Main Product Grid Area -->
+        <div>
+            <!-- Header bar with search indicator / controls -->
+            <div class="flex mb-4" style="justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 0.75rem;">
+                <div>
+                    <span style="color: #666;">Showing {{ products|length if products else 0 }} items</span>
+                </div>
+                <!-- Hidden Loading Spinner for AJAX filtering -->
+                <div id="loadingSpinner" class="hidden" style="display: flex; align-items: center; gap: 0.5rem; color: #888;">
+                    <div class="spinner" style="border: 2px solid #f3f3f3; border-top: 2px solid #111; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite;"></div>
+                    <span>Updating products...</span>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="product-grid grid grid-cols-3 gap" id="productGrid">
+                {% if products %}
+                    {% for p in products %}
+                    <div class="product-card" data-product-id="{{ p.id }}">
+                        <div style="position: relative;">
+                            <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}">
+                                <img src="{{ p.images[0] if p.images and p.images|length > 0 else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ p.name }}" class="product-img">
+                            </a>
+                            <div class="product-badge" style="position: absolute; top: 10px; left: 10px;">
+                                {% if (p.in_stock is defined and not p.in_stock) or (p.stock is defined and p.stock <= 0) %}
+                                    <span class="badge badge-stock out-of-stock">Out of Stock</span>
+                                {% elif p.is_sale is defined and p.is_sale %}
+                                    <span class="badge badge-sale">Sale</span>
+                                {% elif p.is_new is defined and p.is_new %}
+                                    <span class="badge badge-new">New</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="product-meta mt-2">
+                            <h3 class="product-name">
+                                <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}">{{ p.name }}</a>
+                            </h3>
+                            <div class="product-price mb-2">${{ '%.2f'|format(p.price) }}</div>
+                            <div class="flex gap">
+                                <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">View</a>
+                                <button type="button" class="btn btn-primary btn-sm add-to-cart-btn" data-product-id="{{ p.id }}">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state text-center" style="grid-column: 1 / -1; padding: 4rem 1rem;">
+                        <h3 class="mb-2">No products found</h3>
+                        <p class="mb-4">Try adjusting your filters or search criteria to find what you're looking for.</p>
+                        <a href="{{ url_for('catalog.shop') }}" class="btn btn-primary">Clear All Filters</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination %}
+            <div class="pagination flex mt-4" style="justify-content: center; gap: 0.5rem; align-items: center;">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('catalog.shop', page=pagination.prev_num, **request.args) }}" class="btn btn-outline btn-sm">&laquo; Prev</a>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <a href="{{ url_for('catalog.shop', page=page_num, **request.args) }}" class="btn btn-outline btn-sm">{{ page_num }}</a>
+                        {% else %}
+                            <span class="btn btn-primary btn-sm active">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span>…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('catalog.shop', page=pagination.next_num, **request.args) }}" class="btn btn-outline btn-sm">Next &raquo;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}

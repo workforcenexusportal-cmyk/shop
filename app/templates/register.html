@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ATELIER{% endblock %}
+
+{% block meta_description %}Create an ATELIER account to enjoy personalized shopping, exclusive member offers, and order tracking.{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-4" style="max-width: 480px;">
+    <div style="background: #fff; border: 1px solid #eee; padding: 2.5rem; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <h1 class="text-center mb-2" style="font-family: 'Playfair Display', serif; font-size: 2rem;">Create Account</h1>
+        <p class="text-center mb-4" style="color: #666; font-size: 0.95rem;">Join ATELIER for exclusive access to bespoke collections.</p>
+
+        <form action="{{ url_for('auth.register') }}" method="POST" id="registerForm">
+            {% if form and form.csrf_token %}
+                {{ form.csrf_token }}
+            {% else %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+            {% endif %}
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="full_name">Full Name</label>
+                {% if form and form.full_name %}
+                    {{ form.full_name(class="form-input", id="full_name", placeholder="John Doe", required=true) }}
+                    {% if form.full_name.errors %}
+                        {% for error in form.full_name.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="text" name="full_name" id="full_name" class="form-input" placeholder="John Doe" required autocomplete="name">
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="email">Email Address</label>
+                {% if form and form.email %}
+                    {{ form.email(class="form-input", id="email", type="email", placeholder="your.email@example.com", required=true) }}
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="email" name="email" id="email" class="form-input" placeholder="your.email@example.com" required autocomplete="email">
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="password">Password</label>
+                {% if form and form.password %}
+                    {{ form.password(class="form-input", id="password", required=true) }}
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="password" name="password" id="password" class="form-input" minlength="8" required autocomplete="new-password">
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="confirm_password">Confirm Password</label>
+                {% if form and form.confirm_password %}
+                    {{ form.confirm_password(class="form-input", id="confirm_password", required=true) }}
+                    {% if form.confirm_password.errors %}
+                        {% for error in form.confirm_password.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="password" name="confirm_password" id="confirm_password" class="form-input" minlength="8" required autocomplete="new-password">
+                {% endif %}
+            </div>
+
+            <div class="form-actions mb-4">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">
+                    Register
+                </button>
+            </div>
+
+            <div class="text-center" style="border-top: 1px solid #eee; padding-top: 1.5rem; font-size: 0.9rem; color: #666;">
+                Already have an account? 
+                <a href="{{ url_for('auth.login') }}" style="font-weight: 600; text-decoration: underline;">Sign In</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

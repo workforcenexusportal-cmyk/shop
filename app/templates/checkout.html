@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - ATELIER{% endblock %}
+
+{% block meta_description %}Complete your order safely and securely.{% endblock %}
+
+{% block content %}
+<div class="container mt-2 mb-4">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb mb-4">
+        <a href="{{ url_for('catalog.index') }}">Home</a> / 
+        <a href="{{ url_for('cart.view_cart') }}">Cart</a> / 
+        <span>Checkout</span>
+    </nav>
+
+    <h1 class="mb-4" style="font-family: 'Playfair Display', serif;">Checkout</h1>
+
+    {% if not cart_items or cart_items|length == 0 %}
+    <div class="empty-state text-center" style="padding: 4rem 1rem;">
+        <h2 class="mb-2">Your cart is empty</h2>
+        <p class="mb-4">Please add items to your cart before proceeding to checkout.</p>
+        <a href="{{ url_for('catalog.shop') }}" class="btn btn-primary">Return to Shop</a>
+    </div>
+    {% else %}
+    <form action="{{ url_for('cart.checkout') }}" method="POST" id="checkoutForm">
+        {% if form and form.csrf_token %}
+            {{ form.csrf_token }}
+        {% else %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        {% endif %}
+
+        <div class="grid gap" style="grid-template-columns: 1fr 380px;">
+            <!-- Left Column: Checkout Form -->
+            <div>
+                <!-- Contact Information -->
+                <div style="background: #fff; border: 1px solid #eee; padding: 1.5rem; border-radius: 4px;" class="mb-4">
+                    <h2 class="mb-4" style="font-family: 'Playfair Display', serif; font-size: 1.3rem;">1. Contact Information</h2>
+                    
+                    <div class="form-group mb-2">
+                        <label class="form-label" for="email">Email Address</label>
+                        {% if form and form.email %}
+                            {{ form.email(class="form-input", id="email", placeholder="you@example.com") }}
+                            {% if form.email.errors %}
+                                {% for error in form.email.errors %}
+                                    <span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        {% else %}
+                            <input type="email" name="email" id="email" class="form-input" required value="{{ current_user.email if current_user and current_user.is_authenticated else '' }}" placeholder="you@example.com">
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label class="form-label" for="full_name">Full Name</label>
+                        {% if form and form.full_name %}
+                            {{ form.full_name(class="form-input", id="full_name", placeholder="First and Last Name") }}
+                            {% if form.full_name.errors %}
+                                {% for error in form.full_name.errors %}
+                                    <span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        {% else %}
+                            <input type="text" name="full_name" id="full_name" class="form-input" required value="{{ current_user.full_name if current_user and current_user.is_authenticated and current_user.full_name else '' }}" placeholder="John Doe">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Shipping Address -->
+                <div style="background: #fff; border: 1px solid #eee; padding: 1.5rem; border-radius: 4px;" class="mb-4">
+                    <h2 class="mb-4" style="font-family: 'Playfair Display', serif; font-size: 1.3rem;">2. Shipping Address</h2>
+
+                    <div class="form-group mb-2">
+                        <label class="form-label" for="address_line1">Address Line 1</label>
+                        {% if form and form.address_line1 %}
+                            {{ form.address_line1(class="form-input", id="address_line1", placeholder="Street Address") }}
+                            {% if form.address_line1.errors %}
+                                {% for error in form.address_line1.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                            {% endif %}
+                        {% else %}
+                            <input type="text" name="address_line1" id="address_line1" class="form-input" placeholder="123 Luxury Way" required>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label class="form-label" for="address_line2">Address Line 2 (Optional)</label>
+                        {% if form and form.address_line2 %}
+                            {{ form.address_line2(class="form-input", id="address_line2", placeholder="Apt, Suite, Unit") }}
+                        {% else %}
+                            <input type="text" name="address_line2" id="address_line2" class="form-input" placeholder="Apt 4B">
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row grid grid-cols-2 gap mb-2">
+                        <div class="form-group">
+                            <label class="form-label" for="city">City</label>
+                            {% if form and form.city %}
+                                {{ form.city(class="form-input", id="city") }}
+                                {% if form.city.errors %}
+                                    {% for error in form.city.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                                {% endif %}
+                            {% else %}
+                                <input type="text" name="city" id="city" class="form-input" placeholder="New York" required>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="state">State / Province</label>
+                            {% if form and form.state %}
+                                {{ form.state(class="form-input", id="state") }}
+                                {% if form.state.errors %}
+                                    {% for error in form.state.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                                {% endif %}
+                            {% else %}
+                                <input type="text" name="state" id="state" class="form-input" placeholder="NY" required>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-row grid grid-cols-2 gap mb-2">
+                        <div class="form-group">
+                            <label class="form-label" for="zip_code">ZIP / Postal Code</label>
+                            {% if form and form.zip_code %}
+                                {{ form.zip_code(class="form-input", id="zip_code") }}
+                                {% if form.zip_code.errors %}
+                                    {% for error in form.zip_code.errors %}<span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>{% endfor %}
+                                {% endif %}
+                            {% else %}
+                                <input type="text" name="zip_code" id="zip_code" class="form-input" placeholder="10001" required>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="country">Country</label>
+                            {% if form and form.country %}
+                                {{ form.country(class="form-select", id="country") }}
+                            {% else %}
+                                <select name="country" id="country" class="form-select" required>
+                                    <option value="US">United States</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="UK">United Kingdom</option>
+                                    <option value="DE">Germany</option>
+                                    <option value="FR">France</option>
+                                </select>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Method -->
+                <div style="background: #fff; border: 1px solid #eee; padding: 1.5rem; border-radius: 4px;" class="mb-4">
+                    <h2 class="mb-4" style="font-family: 'Playfair Display', serif; font-size: 1.3rem;">3. Shipping Method</h2>
+                    
+                    <div class="form-group mb-2">
+                        <label class="flex gap mb-2" style="align-items: center; cursor: pointer; border: 1px solid #ddd; padding: 0.8rem; border-radius: 4px;">
+                            <input type="radio" name="shipping_method" value="standard" checked>
+                            <div style="flex: 1; margin-left: 0.5rem;">
+                                <strong>Standard Express Delivery (3-5 Business Days)</strong>
+                                <p style="font-size: 0.85rem; color: #666; margin: 0;">Complimentary on orders over $200</p>
+                            </div>
+                            <span>$15.00</span>
+                        </label>
+
+                        <label class="flex gap" style="align-items: center; cursor: pointer; border: 1px solid #ddd; padding: 0.8rem; border-radius: 4px;">
+                            <input type="radio" name="shipping_method" value="overnight">
+                            <div style="flex: 1; margin-left: 0.5rem;">
+                                <strong>Overnight Priority Delivery (1 Business Day)</strong>
+                                <p style="font-size: 0.85rem; color: #666; margin: 0;">Next day delivery guaranteed</p>
+                            </div>
+                            <span>$35.00</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Order Summary -->
+            <div>
+                <aside class="cart-summary" style="background: #fafafa; padding: 1.5rem; border-radius: 4px; border: 1px solid #eee;">
+                    <h2 class="mb-4" style="font-family: 'Playfair Display', serif; font-size: 1.3rem; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem;">Order Summary</h2>
+
+                    <div class="cart-items-mini mb-4">
+                        {% for item in cart_items %}
+                        <div class="flex gap mb-2" style="align-items: center; justify-content: space-between;">
+                            <div class="flex gap" style="align-items: center;">
+                                <img src="{{ item.product_image if item.product_image else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ item.product_name }}" style="width: 48px; height: 56px; object-fit: cover; border-radius: 4px;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.9rem;">{{ item.product_name }}</div>
+                                    <div style="font-size: 0.8rem; color: #666;">Qty: {{ item.quantity }} {% if item.size %}| Size: {{ item.size }}{% endif %}</div>
+                                </div>
+                            </div>
+                            <div style="font-weight: 600;">${{ '%.2f'|format(item.subtotal) }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% set subtotal = cart_subtotal if cart_subtotal is defined else cart_items|sum(attribute='subtotal') %}
+                    {% set shipping = 15.00 if subtotal < 200 and subtotal > 0 else 0.00 %}
+                    {% set total = subtotal + shipping %}
+
+                    <div style="border-top: 1px solid #ddd; padding-top: 1rem;">
+                        <div class="flex mb-2" style="justify-content: space-between;">
+                            <span>Subtotal</span>
+                            <span>${{ '%.2f'|format(subtotal) }}</span>
+                        </div>
+                        <div class="flex mb-2" style="justify-content: space-between; color: #666;">
+                            <span>Shipping</span>
+                            <span>{% if shipping == 0 %}Free{% else %}${{ '%.2f'|format(shipping) }}{% endif %}</span>
+                        </div>
+                        <div class="cart-total flex mt-2" style="justify-content: space-between; font-weight: 700; font-size: 1.25rem; border-top: 2px solid #111; padding-top: 1rem;">
+                            <span>Total</span>
+                            <span>${{ '%.2f'|format(total) }}</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

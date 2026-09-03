@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Login - ATELIER{% endblock %}
+
+{% block meta_description %}Log in to your ATELIER account to view orders, track shipments, and manage your wishlist.{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-4" style="max-width: 460px;">
+    <div style="background: #fff; border: 1px solid #eee; padding: 2.5rem; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <h1 class="text-center mb-2" style="font-family: 'Playfair Display', serif; font-size: 2rem;">Welcome Back</h1>
+        <p class="text-center mb-4" style="color: #666; font-size: 0.95rem;">Sign in to access your saved items and personal wardrobe.</p>
+
+        <form action="{{ url_for('auth.login') }}" method="POST" id="loginForm">
+            {% if form and form.csrf_token %}
+                {{ form.csrf_token }}
+            {% else %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+            {% endif %}
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="email">Email Address</label>
+                {% if form and form.email %}
+                    {{ form.email(class="form-input", id="email", type="email", placeholder="your.email@example.com", required=true) }}
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="email" name="email" id="email" class="form-input" placeholder="your.email@example.com" required autocomplete="email">
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-4">
+                <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+                </div>
+                {% if form and form.password %}
+                    {{ form.password(class="form-input", id="password", required=true) }}
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <span style="color: #d9534f; font-size: 0.85rem;">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <input type="password" name="password" id="password" class="form-input" required autocomplete="current-password">
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="flex gap" style="align-items: center; cursor: pointer;">
+                    {% if form and form.remember %}
+                        {{ form.remember() }}
+                    {% elif form and form.remember_me %}
+                        {{ form.remember_me() }}
+                    {% else %}
+                        <input type="checkbox" name="remember" id="remember">
+                    {% endif %}
+                    <span style="font-size: 0.9rem; color: #555;">Remember me on this device</span>
+                </label>
+            </div>
+
+            <div class="form-actions mb-4">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">
+                    Sign In
+                </button>
+            </div>
+
+            <div class="text-center" style="border-top: 1px solid #eee; padding-top: 1.5rem; font-size: 0.9rem; color: #666;">
+                Don't have an account yet? 
+                <a href="{{ url_for('auth.register') }}" style="font-weight: 600; text-decoration: underline;">Create account</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

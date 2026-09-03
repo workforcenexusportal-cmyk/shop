@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <title>{% block title %}ATELIER{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}ATELIER - Fine clothing, timeless elegance, and premium quality. {% endblock %}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Top Bar / Navigation -->
+    <nav class="navbar">
+        <div class="container flex gap" style="justify-content: space-between; align-items: center;">
+            <a href="{{ url_for('catalog.index') }}" class="nav-brand">ATELIER</a>
+            
+            <div class="nav-links flex gap" style="align-items: center;">
+                <a href="{{ url_for('catalog.index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('catalog.shop') }}" class="nav-link">Shop</a>
+                
+                {% if categories %}
+                <div class="nav-dropdown" style="position: relative;">
+                    <a href="#" class="nav-link">Categories ▾</a>
+                    <div class="nav-dropdown-menu" style="display: none; position: absolute; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 0.5rem 0; min-width: 160px; z-index: 50;">
+                        {% for cat in categories %}
+                        <a href="{{ url_for('catalog.shop', category=cat.slug) }}" class="nav-link" style="display: block; padding: 0.5rem 1rem;">{{ cat.name }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Search Form -->
+            <form action="{{ url_for('catalog.shop') }}" method="GET" class="flex gap" style="align-items: center;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <input type="text" name="q" placeholder="Search products..." class="form-input" value="{{ request.args.get('q', '') }}" style="padding: 0.4rem 0.8rem;">
+                </div>
+            </form>
+
+            <div class="nav-links flex gap" style="align-items: center;">
+                <a href="{{ url_for('cart.view_cart') }}" class="nav-link flex gap" style="align-items: center;">
+                    Cart
+                    <span class="cart-badge" id="cartBadge">{{ cart_count|default(0) }}</span>
+                </a>
+
+                {% if current_user and current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.account') }}#wishlist" class="nav-link">Wishlist</a>
+                    <a href="{{ url_for('auth.account') }}" class="nav-link">Account</a>
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link badge badge-new">Admin</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-link btn btn-outline btn-sm">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-2">
+                {% for category, message in messages %}
+                    <div class="toast {% if category == 'error' or category == 'danger' %}toast-error{% else %}toast-success{% endif %} mb-2">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content Area -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-4">
+        <div class="container grid grid-cols-4 gap">
+            <div class="footer-section">
+                <h4 class="nav-brand mb-2">ATELIER</h4>
+                <p>Curated luxury clothing designed for effortless elegance and timeless style. Quality craftsmanship meets modern design.</p>
+            </div>
+            <div class="footer-section">
+                <h4 class="mb-2">Customer Service</h4>
+                <ul class="footer-links">
+                    <li><a href="#" class="nav-link">Contact Us</a></li>
+                    <li><a href="#" class="nav-link">Shipping & Returns</a></li>
+                    <li><a href="#" class="nav-link">Size Guide</a></li>
+                    <li><a href="#" class="nav-link">FAQs</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 class="mb-2">Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('catalog.shop') }}" class="nav-link">Shop All</a></li>
+                    <li><a href="{{ url_for('catalog.shop', filter='new') }}" class="nav-link">New Arrivals</a></li>
+                    <li><a href="{{ url_for('catalog.shop', filter='sale') }}" class="nav-link">Sale</a></li>
+                    <li><a href="{{ url_for('auth.account') }}" class="nav-link">My Account</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 class="mb-2">Newsletter</h4>
+                <p class="mb-2">Subscribe to receive updates, access to exclusive deals, and more.</p>
+                <form action="#" method="POST" class="form-group flex gap">
+                    <input type="email" placeholder="Enter your email" class="form-input" required>
+                    <button type="submit" class="btn btn-primary btn-sm">Join</button>
+                </form>
+            </div>
+        </div>
+        <div class="container text-center mt-4" style="border-top: 1px solid rgba(0,0,0,0.1); padding-top: 1.5rem;">
+            <p>&copy; 2026 ATELIER Luxury Apparel. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

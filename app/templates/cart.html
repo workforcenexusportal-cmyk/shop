@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Cart - ATELIER{% endblock %}
+
+{% block meta_description %}Review your shopping bag and proceed to checkout.{% endblock %}
+
+{% block content %}
+<div class="container mt-2 mb-4">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb mb-4">
+        <a href="{{ url_for('catalog.index') }}">Home</a> / <span>Cart</span>
+    </nav>
+
+    <h1 class="mb-4" style="font-family: 'Playfair Display', serif;">Shopping Bag</h1>
+
+    {% if cart_items and cart_items|length > 0 %}
+    <div class="grid gap" style="grid-template-columns: 1fr 340px;">
+        <!-- Cart Items List -->
+        <div>
+            <div class="cart-items-list">
+                {% for item in cart_items %}
+                <div class="cart-item flex gap mb-4" data-item-id="{{ item.id }}" data-product-id="{{ item.product_id }}" style="border-bottom: 1px solid #eee; padding-bottom: 1.5rem; align-items: center;">
+                    <!-- Image -->
+                    <img src="{{ item.product_image if item.product_image else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ item.product_name }}" class="product-img" style="width: 100px; height: 120px; object-fit: cover; border-radius: 4px;">
+
+                    <!-- Info -->
+                    <div style="flex: 1;">
+                        <h3 class="product-name" style="margin-bottom: 0.25rem;">
+                            <a href="{{ url_for('catalog.product_detail', product_id=item.product_id) }}">{{ item.product_name }}</a>
+                        </h3>
+                        
+                        <div class="product-meta mb-2" style="color: #666; font-size: 0.9rem;">
+                            {% if item.size %}<span>Size: {{ item.size }}</span>{% endif %}
+                            {% if item.size and item.color %} | {% endif %}
+                            {% if item.color %}<span>Color: {{ item.color }}</span>{% endif %}
+                        </div>
+
+                        <div class="product-price" style="font-weight: 600;">
+                            ${{ '%.2f'|format(item.product_price) }}
+                        </div>
+                    </div>
+
+                    <!-- Quantity Control -->
+                    <div class="qty-selector flex gap" style="align-items: center;">
+                        <button type="button" class="btn btn-outline btn-sm cart-qty-btn" data-action="decrease" data-item-id="{{ item.id }}">-</button>
+                        <span class="item-qty" style="min-width: 30px; text-align: center; font-weight: 600;">{{ item.quantity }}</span>
+                        <button type="button" class="btn btn-outline btn-sm cart-qty-btn" data-action="increase" data-item-id="{{ item.id }}">+</button>
+                    </div>
+
+                    <!-- Item Subtotal -->
+                    <div class="text-right" style="min-width: 100px;">
+                        <div style="font-weight: 600; font-size: 1.1rem;">
+                            ${{ '%.2f'|format(item.subtotal) }}
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm mt-1 cart-remove-btn" data-action="remove" data-item-id="{{ item.id }}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ url_for('catalog.shop') }}" class="btn btn-outline">&larr; Continue Shopping</a>
+            </div>
+        </div>
+
+        <!-- Cart Summary Sidebar -->
+        <aside class="cart-summary" style="background: #fafafa; padding: 1.5rem; border-radius: 4px; border: 1px solid #eee; height: fit-content;">
+            <h2 class="mb-4" style="font-family: 'Playfair Display', serif; font-size: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem;">Order Summary</h2>
+            
+            {% set subtotal = cart_subtotal if cart_subtotal is defined else cart_items|sum(attribute='subtotal') %}
+            {% set shipping = 15.00 if subtotal < 200 and subtotal > 0 else 0.00 %}
+            {% set total = subtotal + shipping %}
+
+            <div class="flex mb-2" style="justify-content: space-between;">
+                <span>Subtotal</span>
+                <span>${{ '%.2f'|format(subtotal) }}</span>
+            </div>
+
+            <div class="flex mb-2" style="justify-content: space-between; color: #666;">
+                <span>Shipping Estimate</span>
+                <span>{% if shipping == 0 %}Free{% else %}${{ '%.2f'|format(shipping) }}{% endif %}</span>
+            </div>
+
+            <div class="cart-total flex mt-4 mb-4" style="justify-content: space-between; font-weight: 700; font-size: 1.25rem; border-top: 2px solid #111; padding-top: 1rem;">
+                <span>Total</span>
+                <span>${{ '%.2f'|format(total) }}</span>
+            </div>
+
+            <a href="{{ url_for('cart.checkout') }}" class="btn btn-primary" style="display: block; text-align: center; width: 100%; padding: 0.8rem 0;">
+                Proceed to Checkout
+            </a>
+
+            <div class="mt-4 text-center" style="font-size: 0.85rem; color: #777;">
+                <p>🔒 Secure Checkout. Free returns on all orders within 30 days.</p>
+            </div>
+        </aside>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state text-center" style="padding: 5rem 1rem; background: #fafafa; border-radius: 4px; border: 1px dashed #ccc;">
+        <h2 class="mb-2" style="font-family: 'Playfair Display', serif;">Your Shopping Bag is Empty</h2>
+        <p class="mb-4" style="color: #666;">Looks like you haven't added any luxury pieces to your cart yet.</p>
+        <a href="{{ url_for('catalog.shop') }}" class="btn btn-primary">Start Shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}

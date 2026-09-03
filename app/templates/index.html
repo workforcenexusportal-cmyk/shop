@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Home - ATELIER{% endblock %}
+
+{% block meta_description %}Discover the new luxury collection at ATELIER. Handcrafted apparel, sustainable fabrics, timeless modern fashion.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container text-center">
+        <h1 class="hero-title">Timeless Luxury & Modern Design</h1>
+        <p class="hero-subtitle">Elevate your daily wardrobe with our latest seasonal collection crafted from fine sustainable materials.</p>
+        <div class="mt-4">
+            <a href="{{ url_for('catalog.shop') }}" class="btn btn-primary hero-cta">Shop Collection</a>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Categories Section -->
+<section class="container mt-4 mb-4">
+    <div class="section-header text-center mb-4">
+        <h2 class="section-title">Shop by Category</h2>
+        <p>Explore our carefully curated categories</p>
+    </div>
+    <div class="grid grid-cols-3 gap">
+        {% if categories %}
+            {% for cat in categories %}
+            <div class="product-card text-center" style="padding: 2rem; background: #f9f9f9; border-radius: 4px;">
+                <h3 class="mb-2" style="font-family: 'Playfair Display', serif; font-size: 1.5rem;">{{ cat.name }}</h3>
+                <p class="mb-2" style="color: #666; font-size: 0.9rem;">Explore our latest {{ cat.name|lower }} collection.</p>
+                <a href="{{ url_for('catalog.shop', category=cat.slug) }}" class="btn btn-outline btn-sm">Explore {{ cat.name }}</a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="product-card text-center" style="padding: 2rem; background: #f9f9f9;">
+                <h3>Women's Collection</h3>
+                <a href="{{ url_for('catalog.shop', category='womens') }}" class="btn btn-outline btn-sm mt-2">Explore</a>
+            </div>
+            <div class="product-card text-center" style="padding: 2rem; background: #f9f9f9;">
+                <h3>Men's Collection</h3>
+                <a href="{{ url_for('catalog.shop', category='mens') }}" class="btn btn-outline btn-sm mt-2">Explore</a>
+            </div>
+            <div class="product-card text-center" style="padding: 2rem; background: #f9f9f9;">
+                <h3>Accessories</h3>
+                <a href="{{ url_for('catalog.shop', category='accessories') }}" class="btn btn-outline btn-sm mt-2">Explore</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="container mt-4 mb-4">
+    <div class="section-header text-center mb-4">
+        <h2 class="section-title">Featured Arrivals</h2>
+        <p>Our most wanted pieces of the season</p>
+    </div>
+
+    <div class="product-grid grid grid-cols-4 gap">
+        {% if featured_products or products %}
+            {% set display_products = featured_products if featured_products else products %}
+            {% for p in display_products[:8] %}
+            <div class="product-card" data-product-id="{{ p.id }}">
+                <div style="position: relative;">
+                    <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}">
+                        <img src="{{ p.images[0] if p.images and p.images|length > 0 else url_for('static', filename='images/placeholder.jpg') }}" alt="{{ p.name }}" class="product-img">
+                    </a>
+                    <div style="position: absolute; top: 10px; left: 10px;" class="product-badge">
+                        {% if p.in_stock is defined and not p.in_stock %}
+                            <span class="badge badge-stock out-of-stock">Out of Stock</span>
+                        {% elif p.is_sale is defined and p.is_sale %}
+                            <span class="badge badge-sale">Sale</span>
+                        {% elif p.is_new is defined and p.is_new %}
+                            <span class="badge badge-new">New</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="product-meta mt-2">
+                    <h3 class="product-name">
+                        <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}">{{ p.name }}</a>
+                    </h3>
+                    <div class="product-price mb-2">${{ '%.2f'|format(p.price) }}</div>
+                    <div class="flex gap">
+                        <a href="{{ url_for('catalog.product_detail', product_id=p.id) }}" class="btn btn-outline btn-sm" style="flex: 1; text-center: center;">View Details</a>
+                        <button type="button" class="btn btn-primary btn-sm add-to-cart-btn" data-product-id="{{ p.id }}">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                <p>No products featured right now. Check back soon!</p>
+                <a href="{{ url_for('catalog.shop') }}" class="btn btn-primary mt-2">View All Products</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
