@@ -128,10 +128,14 @@ def serialize_cart_item(item):
     }
 
 
-def get_cart_count():
-    """Return total count of items in the current user/session cart."""
+def get_cart_count(cart=None):
+    """Return total count of items in the current user/session cart.
+
+    Accepts an optional pre-fetched cart to avoid a redundant DB query.
+    """
     try:
-        cart = get_or_create_cart()
+        if cart is None:
+            cart = get_or_create_cart()
         if not cart or not hasattr(cart, 'items') or not cart.items:
             return 0
         return sum(getattr(item, 'quantity', 1) for item in cart.items)
