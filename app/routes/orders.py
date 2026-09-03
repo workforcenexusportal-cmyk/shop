@@ -20,7 +20,7 @@ def checkout_submit():
 
     if not getattr(cart, 'items', None):
         flash('Your cart is empty.', 'danger')
-        return redirect(url_for('cart.cart_view'))
+        return redirect(url_for('cart.view_cart'))
 
     if form.validate_on_submit():
         address_parts = [
@@ -78,7 +78,7 @@ def checkout_submit():
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while processing your order.', 'danger')
-            return redirect(url_for('cart.checkout_view'))
+            return redirect(url_for('cart.checkout'))
 
     cart_items = [item for item in cart.items] if hasattr(cart, 'items') else []
     cart_total = sum(

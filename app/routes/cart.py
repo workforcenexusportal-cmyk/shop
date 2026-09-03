@@ -26,7 +26,7 @@ def compute_cart_total(cart):
 # PAGE ROUTES
 
 @cart_bp.route('/cart', methods=['GET'])
-def cart_view():
+def view_cart():
     cart = get_or_create_cart()
     cart_items = [serialize_cart_item(item) for item in cart.items] if hasattr(cart, 'items') and cart.items else []
     cart_total = compute_cart_total(cart)
@@ -34,7 +34,7 @@ def cart_view():
 
 
 @cart_bp.route('/checkout', methods=['GET'])
-def checkout_view():
+def checkout():
     cart = get_or_create_cart()
     cart_items = [serialize_cart_item(item) for item in cart.items] if hasattr(cart, 'items') and cart.items else []
     cart_total = compute_cart_total(cart)

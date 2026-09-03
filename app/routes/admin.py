@@ -27,7 +27,7 @@ def admin_required(f):
 
 @admin_bp.route('/admin', methods=['GET'])
 @admin_required
-def admin_dashboard():
+def dashboard():
     total_products = Product.query.count()
     total_orders = Order.query.count()
 
