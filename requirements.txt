@@ -10,5 +10,5 @@ timezonefinder
 Pillow==12.3.0
 stripe==9.12.0
 python-dotenv==1.2.2
-gunicorn==22.0.0
-alembic==1.13.2
+gunicorn==26.2.0
+alembic==1.19.1
